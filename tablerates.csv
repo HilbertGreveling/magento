@@ -1,0 +1,4 @@
+Country,Region/State,Zip/Postal Code,Order Subtotal (and above),Price X,Shipping Price
+*,*,*,0,,9.95
+*,*,*,50,,5.95
+*,*,*,100,,0.00
