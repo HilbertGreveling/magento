@@ -5,13 +5,12 @@ specific customer groups.
 
 ## What was built
 
-- Admin configuration for two independent fees: **Shipping Method Fee** and **Payment
-  Method Fee**.
-- The fee is visible everywhere before and after checkout: shipping method list, payment
-  method list, checkout totals, order/invoice/credit-memo view (frontend, guest, admin),
-  confirmation emails, and the Sales REST/GraphQL API.
-- The fee persists correctly through the full order lifecycle (order → invoice → credit
-  memo), verified with real placed orders and database checks, not just unit tests.
+- Admin config for two independent fees: **Shipping Method Fee** and **Payment Method Fee**.
+- The fee shows up everywhere: shipping method list, payment method list, checkout
+  totals, order/invoice/credit-memo view (frontend, guest, admin), confirmation emails,
+  and the Sales REST/GraphQL API.
+- The fee persists through the full order lifecycle (order → invoice → credit memo).
+  Tested with real placed orders and database checks, not just unit tests.
 
 ## Configuration
 
@@ -22,47 +21,59 @@ specific customer groups.
 | Shipping Method Fee | Enabled, Fee Amount, Customer Groups (multiselect), Shipping Methods (multiselect) |
 | Payment Method Fee | Enabled, Fee Amount, Customer Groups (multiselect), Payment Methods (multiselect) |
 
-A fee applies when it's enabled **and** the customer's group **and** the selected method
-are both in the configured lists.
+A fee applies when it's enabled, the customer's group matches, and the selected method
+matches — all three, not just one.
 
 ## What each piece does
 
 | File | Responsibility |
 |---|---|
-| `Model/FeeCalculator.php` | Single source of truth: is a fee applicable, and how much. Everything that charges or previews a fee calls this — nothing duplicates the eligibility logic. |
-| `Model/Total/Quote/ShippingFee.php` | Adds the shipping fee directly onto the native `shipping` total, so it rides on Magento's existing `shipping_amount` handling (order/invoice/credit memo need no extra work). |
-| `Model/Total/Quote/PaymentFee.php` | Registers its own `extra_fee_payment` total line (no native field to merge into). Applies once per shipping address, mirroring how Magento's own multishipping checkout charges shipping per address. |
-| `Model/Total/Invoice/PaymentFee.php`, `Model/Total/Creditmemo/PaymentFee.php` | Carry the payment fee from order → invoice → credit memo. Charged once (not prorated across partial invoices) and refunded up to the outstanding balance on credit memos. |
-| `Observer/CopyFeeToOrder.php` | Copies the fee from the quote address onto the new order. Needed because `fieldset.xml` silently fails for this (see "Notable gotchas"). |
-| `Plugin/AddFeeToShippingMethodAmount.php`, `Plugin/AppendPaymentFeeToTitle.php` | Preview the fee in the shipping/payment method lists during checkout, before the customer commits. |
-| `Block/Sales/Order/PaymentFee.php` + `view/*/layout/*.xml` | Renders a "Payment Method Fee" row on order/invoice/credit-memo totals blocks, across frontend, guest, admin, and email. |
-| `etc/extension_attributes.xml` + `Plugin/AddExtraFeeToOrderExtensionAttributes.php` | Exposes the fee under `extension_attributes` in the Sales REST/GraphQL API response. |
-| `Helper/Config.php` | Reads admin config; negative amounts are clamped to 0. |
+| `Model/FeeCalculator.php` | Decides if a fee applies and how much. Everything else calls this instead of duplicating the eligibility logic. |
+| `Model/Total/Quote/ShippingFee.php` | Adds the shipping fee onto the native `shipping` total, so it's carried through order/invoice/credit memo by Magento's existing `shipping_amount` handling — no extra persistence code needed. |
+| `Model/Total/Quote/PaymentFee.php` | Registers its own `extra_fee_payment` total line. Applies once per shipping address, same as how Magento charges shipping per address on multi-address orders. |
+| `Model/Total/Invoice/PaymentFee.php`, `Model/Total/Creditmemo/PaymentFee.php` | Carry the payment fee from order → invoice → credit memo. Charged once, not split across partial invoices, and refunded up to the outstanding balance on credit memos. |
+| `Observer/CopyFeeToOrder.php` | Copies the fee from the quote address onto the new order. `fieldset.xml` can't do this (see "Notable gotchas"). |
+| `Plugin/AddFeeToShippingMethodAmount.php`, `Plugin/AppendPaymentFeeToTitle.php` | Show the fee in the shipping/payment method lists during checkout, before the customer picks one. |
+| `Block/Sales/Order/PaymentFee.php` + `view/*/layout/*.xml` | Renders a "Payment Method Fee" row on order/invoice/credit-memo totals, on frontend, guest, admin, and email. |
+| `etc/extension_attributes.xml` + `Plugin/AddExtraFeeToOrderExtensionAttributes.php` | Exposes the fee under `extension_attributes` in the Sales REST/GraphQL API. |
+| `Helper/Config.php` | Reads admin config. Negative amounts are clamped to 0. |
 
-## Notable gotchas
+## Notes
 
 - **`Magento\Tax\Model\Sales\Total\Quote\Tax` (sort_order 450) overwrites the `shipping`
-  total.** Any collector that *adds* to `shipping` must run after it (this module uses
-  sort_order 500), or the addition is silently discarded.
-- **`fieldset.xml` cannot copy this field from quote to order.** `Address\ToOrder::convert()`
-  populates the order via `DataObjectHelper::populateWithArray()`, which only keeps fields
-  with a *real, declared* setter (`get_class_methods()`). `Order` only has a magic `__call()`
-  setter for custom columns, so the value is silently dropped — no error, just becomes `0`.
-  This is a known, long-standing Magento limitation (confirmed in
-  [magento/magento2#5823](https://github.com/magento/magento2/issues/5823)), not something
-  specific to this module. The fix is an explicit observer on
-  `sales_model_service_quote_submit_before`.
-- **Order-totals display blocks differ by context** — `order_totals`, `invoice_totals`,
+  total.** Any collector that adds to `shipping` has to run after it (this module uses
+  sort_order 500), or the addition just disappears with no error.
+- **`fieldset.xml` can't copy this field from quote to order.** `Address\ToOrder::convert()`
+  populates the order through `DataObjectHelper::populateWithArray()`, which only keeps
+  fields that have a real, declared setter (`get_class_methods()`). `Order` only has a
+  magic `__call()` setter for a plain custom column, so the value gets dropped — no error,
+  it just becomes `0`. This is a known Magento limitation, not a bug in this module:
+  [magento/magento2#5823](https://github.com/magento/magento2/issues/5823). Magento's own
+  position on closing that issue: custom fields should be extension attributes, not raw
+  columns accessed only through magic methods, because extension attributes have real
+  typed getters/setters. This module stores the fee as a plain column (needed for
+  persistence either way) and also exposes it as an extension attribute where something
+  external actually reads it — the API (`etc/extension_attributes.xml`). The quote → order
+  copy still needs the observer regardless, since extension attributes aren't auto-copied
+  between entities either
+  ([magento/magento2#28333](https://github.com/magento/magento2/issues/28333)).
+  A full rewrite to extension attributes everywhere (all five entities: quote, quote
+  address, order, invoice, credit memo) was considered and rejected — extension attributes
+  still can't persist anything on their own, so it would mean adding `afterLoad`/
+  `beforeSave` bridge plugins on five resource models, for no functional gain and a new way
+  to silently break persistence if a bridge is missed. Magento's own core modules use the
+  same pattern as this one: plain column internally, extension attribute only at the API.
+- **Order-totals display blocks differ by context.** `order_totals`, `invoice_totals`,
   `creditmemo_totals` are three separate parent block names, each needing its own layout XML.
 
 ## Assumptions
 
-- **One flat amount per fee type**, not a different amount per method or per customer
-  group. The spec describes a single `amount` field per fee type — a per-method/per-group
-  amount grid would solve a problem the spec doesn't ask for.
-- **The fee is charged once per shipping address**, not once per quote, to stay consistent
-  with how Magento's own "Ship to Multiple Addresses" checkout charges shipping (one order
-  per address, each independently charged).
+- **One flat amount per fee type**, not a different amount per method or customer group.
+  The spec describes a single `amount` field per fee type — a per-method/per-group amount
+  grid would solve a problem the spec doesn't ask for.
+- **The fee is charged once per shipping address**, not once per quote, to match how
+  Magento's "Ship to Multiple Addresses" checkout charges shipping (one order per address,
+  each charged independently).
 - **The fee is a flat one-time charge, not prorated** across partial invoices/credit memos.
 - **A negative configured amount is treated as 0**, never as a hidden discount.
 - **Enabled + customer group + method are all required together** — there's no "OR" mode.
