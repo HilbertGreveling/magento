@@ -50,6 +50,11 @@ matches. All three, not just one.
   limitation, not a bug in this module:
   [magento/magento2#5823](https://github.com/magento/magento2/issues/5823). Fixed with an
   explicit observer instead of relying on `fieldset.xml`.
+- **Considered: a class preference on `Order` with real getter/setter methods.** Would fix
+  the `fieldset.xml` problem at its root, since `get_class_methods()` would find real
+  methods instead of only magic ones. Only one preference can exist per class
+  across a Magento instance, and `Order` is one of the most commonly extended core
+  classes. Plugins and observers compose across modules
 - **Order-totals display blocks differ by context.** `order_totals`, `invoice_totals`,
   `creditmemo_totals` are three separate parent block names, each needing its own layout XML.
 
