@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <extra_fee>
+            <shipping_fee>
+                <enabled>0</enabled>
+                <amount>0</amount>
+                <customer_groups/>
+                <shipping_methods/>
+            </shipping_fee>
+            <payment_fee>
+                <enabled>0</enabled>
+                <amount>0</amount>
+                <customer_groups/>
+                <payment_methods/>
+            </payment_fee>
+        </extra_fee>
+    </default>
+</config>

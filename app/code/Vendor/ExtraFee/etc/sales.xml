@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Sales:etc/sales.xsd">
+    <section name="quote">
+        <group name="totals">
+            <item name="extra_fee_shipping" instance="Vendor\ExtraFee\Model\Total\Quote\ShippingFee" sort_order="500"/>
+            <item name="extra_fee_payment" instance="Vendor\ExtraFee\Model\Total\Quote\PaymentFee" sort_order="510"/>
+        </group>
+    </section>
+    <section name="order_invoice">
+        <group name="totals">
+            <item name="extra_fee_payment" instance="Vendor\ExtraFee\Model\Total\Invoice\PaymentFee" sort_order="180"/>
+        </group>
+    </section>
+    <section name="order_creditmemo">
+        <group name="totals">
+            <item name="extra_fee_payment" instance="Vendor\ExtraFee\Model\Total\Creditmemo\PaymentFee" sort_order="230"/>
+        </group>
+    </section>
+</config>

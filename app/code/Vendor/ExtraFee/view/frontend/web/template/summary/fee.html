@@ -1,0 +1,7 @@
+<!-- Row for a flat fee total; hidden entirely when the server did not return this segment. -->
+<tr class="totals" data-bind="visible: isDisplayed()">
+    <th class="mark" scope="row" data-bind="text: title"></th>
+    <td class="amount">
+        <span class="price" data-bind="text: getValue(), attr: {'data-label': title}"></span>
+    </td>
+</tr>

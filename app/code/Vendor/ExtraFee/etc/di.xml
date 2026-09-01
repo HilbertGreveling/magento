@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Quote\Model\Cart\ShippingMethodConverter">
+        <plugin name="vendor_extrafee_add_fee_to_shipping_method_amount"
+                type="Vendor\ExtraFee\Plugin\AddFeeToShippingMethodAmount"/>
+    </type>
+    <type name="Magento\Payment\Model\Method\AbstractMethod">
+        <plugin name="vendor_extrafee_append_payment_fee_to_title"
+                type="Vendor\ExtraFee\Plugin\AppendPaymentFeeToTitle"/>
+    </type>
+    <type name="Magento\Sales\Api\OrderRepositoryInterface">
+        <plugin name="vendor_extrafee_add_extra_fee_to_order_extension_attributes"
+                type="Vendor\ExtraFee\Plugin\AddExtraFeeToOrderExtensionAttributes"/>
+    </type>
+</config>

@@ -1,0 +1,32 @@
+{
+    "quote": {
+        "column": {
+            "extra_fee_payment_amount": true,
+            "base_extra_fee_payment_amount": true
+        }
+    },
+    "sales_order": {
+        "column": {
+            "extra_fee_payment_amount": true,
+            "base_extra_fee_payment_amount": true
+        }
+    },
+    "sales_invoice": {
+        "column": {
+            "extra_fee_payment_amount": true,
+            "base_extra_fee_payment_amount": true
+        }
+    },
+    "sales_creditmemo": {
+        "column": {
+            "extra_fee_payment_amount": true,
+            "base_extra_fee_payment_amount": true
+        }
+    },
+    "quote_address": {
+        "column": {
+            "extra_fee_payment_amount": true,
+            "base_extra_fee_payment_amount": true
+        }
+    }
+}
