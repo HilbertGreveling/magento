@@ -63,6 +63,9 @@ matches — all three, not just one.
   `beforeSave` bridge plugins on five resource models, for no functional gain and a new way
   to silently break persistence if a bridge is missed. Magento's own core modules use the
   same pattern as this one: plain column internally, extension attribute only at the API.
+  Extension attributes weren't part of the original design. the initial fix was just the
+  plain column + observer. They were added afterward, once researching the `fieldset.xml`
+  issue above surfaced Magento's own recommendation to expose custom fields this way.
 - **Order-totals display blocks differ by context.** `order_totals`, `invoice_totals`,
   `creditmemo_totals` are three separate parent block names, each needing its own layout XML.
 
@@ -77,6 +80,24 @@ matches — all three, not just one.
 - **The fee is a flat one-time charge, not prorated** across partial invoices/credit memos.
 - **A negative configured amount is treated as 0**, never as a hidden discount.
 - **Enabled + customer group + method are all required together** — there's no "OR" mode.
+
+## Improvements with more time
+
+- **Package it as a real installable extension.** Right now it only exists inside this
+  Magento checkout's `app/code`. Splitting it into its own git repo, tagging releases,
+  and adding it as a Composer dependency (via a private repository or Packagist) would
+  let it be installed with `composer require` like any other module, instead of copied in.
+- **CI pipeline.** A GitHub Actions workflow running `phpcs`, `phpunit`, and static
+  analysis (PHPStan/PHPMD) on every push and PR, instead of relying on manually running
+  them.
+- **Fill remaining test gaps.** `Model/Total/Invoice/PaymentFee.php`,
+  `Model/Total/Creditmemo/PaymentFee.php`, and `Block/Sales/Order/PaymentFee.php` have no
+  unit tests yet
+- **Get the integration tests actually running.** `Test/Integration/` exists but can't run
+  in this environment
+- **Per-method/per-customer-group amounts**, if that requirement ever comes up. see
+  "Assumptions" above for what that would take (a repeatable grid, or a dedicated rule
+  table for a full matrix).
 
 ## Running the tests
 
